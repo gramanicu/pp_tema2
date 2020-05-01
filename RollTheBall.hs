@@ -5,6 +5,7 @@
 module RollTheBall where
 import Pipes
 import ProblemState
+import Data.Array as Arr
 
 {-
     Direcțiile în care se poate mișca o piesa pe tablă
@@ -23,73 +24,62 @@ type Position = (Int, Int)
 {-
     Tip de date pentru reprezentarea celulelor tablei de joc
 -}
-data Cell = Cell --TODO
+data Cell = Cell 
+    {
+        cellType :: Char,
+        cellPos :: Position
+    } deriving (Eq, Ord)
+
+instance Show Cell
+    where show (Cell t _) = [t]
 
 {-
     Tip de date pentru reprezentarea nivelului curent
 -}
-data Level = Level --TODO
+data Level = Level 
+    {
+        levelMatrix :: Arr.Array Position Cell
+    }
     deriving (Eq, Ord)
-{-
-    *** Optional *** 
-  
-    Dacă aveți nevoie de o funcționalitate particulară,
-    instantiați explicit clasele Eq și Ord pentru Level.
-    În cazul acesta, eliminați deriving (Eq, Ord) din Level.
--}
 
 {-
-    *** TODO ***
 
-    Instanțiati Level pe Show. 
-    Atenție! Fiecare linie este urmată de \n (endl in Pipes).
 -}
-
 instance Show Level 
-    where show = undefined
+    where show (Level arr) =  "\n"  ++ concat [ if snd ps /= snd (snd (Arr.bounds arr)) then show cell else show cell ++ "\n" | (ps, cell) <- assocs arr]
 
 {-
-    *** TODO ***
-    Primește coordonatele colțului din dreapta jos a hărții.
-    Intoarce un obiect de tip Level în care tabla este populată
-    cu EmptySpace. Implicit, colțul din stânga sus este (0,0)
+    Creeaza un nou nivel. Parametrul pos specifica unde se afla coltul din dreapta jos al tablei. Tipul de data Level contine un Data.Array, definit intre (0,0) si pos.
+    Apoi, valorile arrayului sunt setate cu ajutorul unui list comprehension.
 -}
-
 emptyLevel :: Position -> Level
-emptyLevel = undefined
+emptyLevel pos = Level (array ((0,0), pos) [((x, y), (Cell emptySpace (x, y))) | x <- [0..fst (pos)], y <- [0..snd (pos)]])
 
 {-
-    *** TODO ***
-
-    Adaugă o celulă de tip Pipe în nivelul curent.
-    Parametrul char descrie tipul de tile adăugat: 
-        verPipe -> pipe vertical
-        horPipe -> pipe orizontal
-        topLeft, botLeft, topRight, botRight -> pipe de tip colt
-        startUp, startDown, startLeft, startRight -> pipe de tip initial
-        winUp, winDown, winLeft, winRight -> pipe de tip final
-    Parametrul Position reprezintă poziția de pe hartă la care va fi adaugată
-    celula, dacă aceasta este liberă (emptySpace).
+    Verifica daca o pozitie se afla pe table (x,y nu sunt mai mici ca 0 sau mai mari decat coltul din dreapta jos)
 -}
+validPosition :: Position -> Position -> Bool
+validPosition pos corner = if x < 0 || y < 0 || x > fst corner || y > snd corner then False else True
+    where 
+        x = fst pos 
+        y = snd pos
 
+{-
+    Adauga un cell de tipul precizat la o anumita pozitie. Prima oara se verifica daca pozitia este valida. Daca nu, nu se modifica nivelul. Daca casuta pe care
+    o vom modifica este goala, vom pune noua casuta la acea pozitie. (Sintaxa e ciudata pentru operatia aceasta, dar merge)
+-}
 addCell :: (Char, Position) -> Level -> Level
-addCell = undefined
-
+addCell (t,pos) lvl = if validPosition pos (snd(Arr.bounds (levelMatrix lvl))) then
+        if (cellType cell) == emptySpace then Level (levelMatrix(lvl) // [(p, Cell t pos)| p <- [pos]]) else lvl
+    else lvl
+    where cell = levelMatrix lvl! pos
 
 {-
-    *** TODO *** 
-
-    Primește coordonatele colțului din dreapta jos al hărții și o listă de 
-    perechi de tipul (caracter_celulă, poziția_celulei).
-    Întoarce un obiect de tip Level cu toate celeule din listă agăugate pe
-    hartă.
-    Observatie: Lista primită ca parametru trebuie parcursă de la dreapta 
-    la stanga.
+    Creeaza un nou nivel folosind o lista de celule si pozitia coltului din dreapta jos al tabelei. Se foloseste un foldl, folosind un nivel (care initial are doar
+    casute goale) ca acumulator
 -}
- 
 createLevel :: Position -> [(Char, Position)] -> Level
-createLevel = undefined
-
+createLevel corner cells = foldl (\ lvl cell -> (addCell cell lvl)) (emptyLevel corner) cells 
 
 {-
     *** TODO ***
