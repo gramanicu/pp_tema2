@@ -48,7 +48,7 @@ startRight = '├'
 winUp :: Char
 winUp = '╨'
 
-winDown :: Char--
+winDown :: Char
 winDown = '╥'
 
 winLeft :: Char
